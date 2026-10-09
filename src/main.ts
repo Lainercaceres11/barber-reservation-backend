@@ -1,7 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+
 import dbConnection from "./config/database";
+import userRouter from "./routes/user.route";
+import authRouter from "./routes/auth.route";
 
 dotenv.config();
 
@@ -17,6 +20,10 @@ app.get("/", (_req, res) => {
     message: "Server barber backend running",
   });
 });
+
+//routes
+app.use("/users", userRouter);
+app.use("/auth", authRouter);
 
 app.listen(PORT, async () => {
   dbConnection();
