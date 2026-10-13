@@ -53,11 +53,9 @@ export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required" });
-  }
-
-  if (password.length < 8) {
-    return res.status(400).json({ message: "Password is to short" });
+    return res.status(400).json({
+      message: "Email and password are required",
+    });
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -74,32 +72,47 @@ export const loginUser = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
     }
 
     const verifyPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!verifyPassword) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
     }
-
-    const payload = {
-      id: user.id,
-      role: user.role,
-    };
 
     const jwtSecret = process.env.JWT_SECRET;
+
     if (!jwtSecret) {
-      return res.status(500).json({ message: "Server error" });
+      console.error("JWT_SECRET no está configurado");
+
+      return res.status(500).json({
+        message: "Server error",
+      });
     }
 
-    const token = jwt.sign(payload, jwtSecret, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign(
+      {
+        sub: String(user.id),
+        role: user.role,
+      },
+      jwtSecret,
+      { expiresIn: "1h" },
+    );
 
-    return res.status(200).json({ message: "Login succesful", token: token });
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+    });
   } catch (error) {
-    console.log("Login error", error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Login error:", error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };

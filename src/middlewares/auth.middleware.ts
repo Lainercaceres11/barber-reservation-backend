@@ -2,8 +2,15 @@ import { Request, Response, NextFunction } from "express";
 
 import jwt, { JwtPayload } from "jsonwebtoken";
 
+type UserRole = "customer" | "barber" | "admin";
+
+interface AuthPayload extends JwtPayload {
+  sub: string;
+  role: UserRole;
+}
+
 export interface AuthenticatedRequest extends Request {
-  user?: string | JwtPayload;
+  user?: AuthPayload;
 }
 
 export const authenticateToken = (
@@ -33,8 +40,18 @@ export const authenticateToken = (
   try {
     const verified = jwt.verify(token, secret);
 
-    (req as AuthenticatedRequest).user = verified;
+    if (
+      typeof verified === "string" ||
+      typeof verified.sub !== "string" ||
+      !["customer", "barber", "admin"].includes(String(verified.role))
+    ) {
+      res.status(401).json({
+        error: "Invalid token payload",
+      });
+      return;
+    }
 
+    (req as AuthenticatedRequest).user = verified as AuthPayload;
     next();
   } catch {
     res.status(401).json({
