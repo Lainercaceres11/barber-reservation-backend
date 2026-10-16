@@ -116,3 +116,38 @@ export const loginUser = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user?: { sub?: string } }).user?.sub;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await User.findByPk(userId, {
+      attributes: {
+        exclude: ["password_hash"],
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Current user retrieved successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.error("Get current user error:", error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
