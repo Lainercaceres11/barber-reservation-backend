@@ -10,6 +10,7 @@ interface UserAttributes {
   phone: string | null;
   role: "customer" | "barber" | "admin";
   is_active: boolean;
+  image_url: string | null;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -30,6 +31,7 @@ class User
   declare phone: string | null;
   declare role: "customer" | "barber" | "admin";
   declare is_active: boolean;
+  declare image_url: string | null;
   declare created_at: Date;
   declare updated_at: Date;
 }
@@ -73,6 +75,10 @@ User.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
+    },
+    image_url: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,

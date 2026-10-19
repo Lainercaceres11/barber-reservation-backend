@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/user";
 import bcrypt from "bcrypt";
+import { uploadToCloudinary } from "../../utils/upload-to-cloudinary";
 
 export const getAllBarber = async (req: Request, res: Response) => {
   try {
@@ -51,6 +52,7 @@ export const getBarberById = async (req: Request, res: Response) => {
 
 export const createBarber = async (req: Request, res: Response) => {
   const { name, email, phone, password_hash } = req.body;
+  const image = req.file;
 
   if (!name || !email || !password_hash) {
     return res
@@ -81,10 +83,17 @@ export const createBarber = async (req: Request, res: Response) => {
   const encrypted_password = await bcrypt.hash(password_hash, 10);
 
   try {
+    let imageUrl: string | null = null;
+
+    if (image) {
+      const uploadedImage = await uploadToCloudinary(image, "users");
+      imageUrl = uploadedImage.secure_url;
+    }
     const newUser = await User.create({
       name,
       email,
       phone,
+      image_url: imageUrl,
       password_hash: encrypted_password,
       role: "barber",
     });

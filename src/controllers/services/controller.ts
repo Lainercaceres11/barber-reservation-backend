@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Service from "../../models/service";
+import { uploadToCloudinary } from "../../utils/upload-to-cloudinary";
 
 export const getServices = async (req: Request, res: Response) => {
   try {
@@ -38,17 +39,25 @@ export const getServicesById = async (req: Request, res: Response) => {
 
 export const createService = async (req: Request, res: Response) => {
   const { name, description, price, duration_minutes } = req.body;
+  const image = req.file;
+
+  const parsedPrice = Number(price);
+  const parsedDuration = Number(duration_minutes);
+
   if (
     typeof name !== "string" ||
     !name.trim() ||
     (description !== undefined &&
       description !== null &&
       typeof description !== "string") ||
-    typeof price !== "number" ||
-    !Number.isFinite(price) ||
-    price < 0 ||
-    !Number.isInteger(duration_minutes) ||
-    duration_minutes <= 0
+    price === undefined ||
+    price === "" ||
+    !Number.isFinite(parsedPrice) ||
+    parsedPrice < 0 ||
+    duration_minutes === undefined ||
+    duration_minutes === "" ||
+    !Number.isInteger(parsedDuration) ||
+    parsedDuration <= 0
   ) {
     return res.status(400).json({
       message: "Invalid service data",
@@ -56,18 +65,31 @@ export const createService = async (req: Request, res: Response) => {
   }
 
   try {
+    let imageUrl: string | null = null;
+
+    if (image) {
+      const uploadedImage = await uploadToCloudinary(image, "services");
+      imageUrl = uploadedImage.secure_url;
+    }
+
     const newService = await Service.create({
-      name,
+      name: name.trim(),
       description,
-      price,
-      duration_minutes,
+      price: parsedPrice,
+      duration_minutes: parsedDuration,
+      image_url: imageUrl,
     });
 
-    return res
-      .status(200)
-      .json({ message: "Service created susccesfully", data: newService });
+    return res.status(201).json({
+      message: "Service created successfully",
+      data: newService,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Server error" });
+    console.error("Error creating service:", error);
+
+    return res.status(500).json({
+      message: "Error creating service",
+    });
   }
 };
 
@@ -126,12 +148,10 @@ export const deleteService = async (req: Request, res: Response) => {
       },
     );
 
-    return res
-      .status(200)
-      .json({
-        message: "Service deactivated susccesfully",
-        data: deleteService,
-      });
+    return res.status(200).json({
+      message: "Service deactivated susccesfully",
+      data: deleteService,
+    });
   } catch (error) {
     return res.status(500).json({ message: "Server error" });
   }

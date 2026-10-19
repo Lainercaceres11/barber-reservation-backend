@@ -16,8 +16,6 @@ export const getAppointments = async (
       req as Request & { user: { sub: string; role: string } }
     ).user;
 
-    console.log({ sub, role });
-
     const where: Record<string, unknown> = {};
 
     if (role === "customer") {

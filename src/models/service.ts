@@ -5,6 +5,7 @@ import { sequelize } from "../config/database";
 interface ServiceAttributes {
   id: number;
   name: string;
+  image_url: string | null;
   description: string | null;
   price: number;
   duration_minutes: number;
@@ -23,6 +24,7 @@ class Service
   implements ServiceAttributes
 {
   declare id: number;
+  declare image_url: string | null;
   declare name: string;
   declare description: string | null;
   declare price: number;
@@ -38,6 +40,10 @@ Service.init(
       type: DataTypes.BIGINT,
       primaryKey: true,
       autoIncrement: true,
+    },
+    image_url: {
+      type: DataTypes.STRING(2048),
+      allowNull: true,
     },
     name: {
       type: DataTypes.STRING(100),

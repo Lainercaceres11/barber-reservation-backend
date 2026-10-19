@@ -8,15 +8,17 @@ import {
 } from "../controllers/services/controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
 import { authorizeRoles } from "../middlewares/role.middleware";
+import uploadImage from "../middlewares/upload-image";
 
 const serviceRouter = Router();
 
-serviceRouter.get("/", authenticateToken, getServices);
-serviceRouter.get("/:id", authenticateToken, getServicesById);
+serviceRouter.get("/", getServices);
+serviceRouter.get("/:id", getServicesById);
 serviceRouter.post(
   "/",
   authenticateToken,
-  authorizeRoles("admin"),
+  uploadImage.single("image"),
+  authorizeRoles("barber"),
   createService,
 );
 serviceRouter.put(

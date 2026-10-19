@@ -9,27 +9,29 @@ import {
   getBarberById,
   updateBarber,
 } from "../controllers/barber/controller";
+import uploadImage from "../middlewares/upload-image";
 
 const barberRouter = Router();
 
-barberRouter.get("/", authenticateToken, getAllBarber);
-barberRouter.get("/:id", authenticateToken, getBarberById);
+barberRouter.get("/", getAllBarber);
+barberRouter.get("/:id", getBarberById);
 barberRouter.post(
   "/",
   authenticateToken,
-  authorizeRoles("admin"),
+  authorizeRoles("barber"),
+  uploadImage.single("image"),
   createBarber,
 );
 barberRouter.put(
   "/:id",
   authenticateToken,
-  authorizeRoles("customer"),
+  authorizeRoles("admin"),
   updateBarber,
 );
 barberRouter.put(
   "/deleted/:id",
   authenticateToken,
-  authorizeRoles("customer"),
+  authorizeRoles("barber"),
   deleteBarber,
 );
 
