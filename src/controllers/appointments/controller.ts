@@ -90,20 +90,27 @@ export const createAppointment = async (
       return;
     }
 
-    const { barber_id, service_id, starts_at, customer_notes } =
+    const { barber_id, service_id, starts_at } =
       req.body as CreateAppointmentBody;
 
+    const barberId = Number(barber_id);
+    const serviceId = Number(service_id);
+
     if (
-      !barber_id ||
-      !Number.isInteger(Number(barber_id)) ||
-      !service_id ||
-      !Number.isInteger(Number(service_id)) ||
+      barber_id === undefined ||
+      barber_id === null ||
+      !Number.isSafeInteger(barberId) ||
+      barberId <= 0 ||
+      service_id === undefined ||
+      service_id === null ||
+      !Number.isSafeInteger(serviceId) ||
+      serviceId <= 0 ||
       typeof starts_at !== "string" ||
+      !starts_at.trim() ||
       Number.isNaN(Date.parse(starts_at))
     ) {
       res.status(400).json({
-        message:
-          "Debes proporcionar un barbero, un servicio y una fecha válida",
+        message: "Selecciona un barbero, un servicio y una fecha válida",
       });
       return;
     }
@@ -118,8 +125,8 @@ export const createAppointment = async (
       {
         replacements: {
           customer_id: sub,
-          barber_id: Number(barber_id),
-          service_id: Number(service_id),
+          barber_id: barberId,
+          service_id: serviceId,
           starts_at,
         },
         type: QueryTypes.SELECT,
@@ -130,7 +137,7 @@ export const createAppointment = async (
 
     if (!appointmentId) {
       res.status(500).json({
-        message: "No se pudo crear la cita",
+        message: "No se pudo crear la cita. Inténtalo nuevamente.",
       });
       return;
     }
@@ -145,23 +152,44 @@ export const createAppointment = async (
   } catch (error) {
     console.error("Error al crear la cita:", error);
 
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "original" in error &&
-      typeof error.original === "object" &&
-      error.original !== null &&
-      "code" in error.original &&
-      error.original.code === "23P01"
-    ) {
-      res.status(409).json({
-        message: "Ese horario ya no está disponible",
-      });
-      return;
+    const dbError =
+      typeof error === "object" && error !== null && "original" in error
+        ? error.original
+        : null;
+
+    if (typeof dbError === "object" && dbError !== null) {
+      const code = "code" in dbError ? dbError.code : undefined;
+      const message =
+        "message" in dbError && typeof dbError.message === "string"
+          ? dbError.message
+          : "";
+
+      if (code === "23P01") {
+        res.status(409).json({
+          message: "Ese horario acaba de ocuparse. Elige otro.",
+        });
+        return;
+      }
+
+      if (code === "P0001") {
+        const conflictMessages = [
+          "El barbero no está disponible en ese horario",
+          "La reserva está fuera del horario laboral",
+        ];
+
+        const isConflict = conflictMessages.some((item) =>
+          message.includes(item),
+        );
+
+        res.status(isConflict ? 409 : 400).json({
+          message: message || "No se pudo completar la reserva.",
+        });
+        return;
+      }
     }
 
     res.status(500).json({
-      message: "Error interno al crear la cita",
+      message: "Ocurrió un error al crear la cita. Inténtalo nuevamente.",
     });
   }
 };
