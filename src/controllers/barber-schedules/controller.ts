@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../../models/user";
 import BarberSchedule from "../../models/barber-schedules";
 import { Op } from "sequelize";
+import Appointment from "../../models/appointments";
 
 export const getBarbersSchedules = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -358,6 +359,78 @@ export const deleteBarberSchedule = async (req: Request, res: Response) => {
 
     return res.status(500).json({
       message: "Server error",
+    });
+  }
+};
+
+export const getBarberAvailability = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { date } = req.query;
+
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({
+      message: "La fecha debe tener el formato YYYY-MM-DD",
+    });
+  }
+
+  try {
+    const barber = await User.findOne({
+      where: {
+        id,
+        role: "barber",
+        is_active: true,
+      },
+    });
+
+    if (!barber) {
+      return res.status(404).json({
+        message: "Barbero no encontrado",
+      });
+    }
+
+    // Día de la semana: domingo = 0, sábado = 6.
+    const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay();
+
+    const schedules = await BarberSchedule.findAll({
+      where: {
+        barber_id: barber.id,
+        day_of_week: dayOfWeek,
+      },
+      order: [["start_time", "ASC"]],
+    });
+
+    // Inicio y fin del día en hora colombiana (UTC-5).
+    const startOfDay = new Date(`${date}T00:00:00-05:00`);
+    const endOfDay = new Date(
+      new Date(`${date}T00:00:00-05:00`).getTime() + 24 * 60 * 60 * 1000,
+    );
+
+    const bookedAppointments = await Appointment.findAll({
+      where: {
+        barber_id: barber.id,
+        status: {
+          [Op.in]: ["pending", "confirmed"],
+        },
+        starts_at: { [Op.lt]: endOfDay },
+        ends_at: { [Op.gt]: startOfDay },
+      },
+      attributes: ["starts_at", "ends_at"],
+      order: [["starts_at", "ASC"]],
+    });
+
+    return res.status(200).json({
+      data: {
+        barber_id: barber.id,
+        date,
+        schedules,
+        booked_appointments: bookedAppointments,
+      },
+    });
+  } catch (error) {
+    console.error("Get barber availability error:", error);
+
+    return res.status(500).json({
+      message: "Error al consultar la disponibilidad",
     });
   }
 };

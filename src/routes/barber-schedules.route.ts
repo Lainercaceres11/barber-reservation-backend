@@ -3,6 +3,7 @@ import { authenticateToken } from "../middlewares/auth.middleware";
 import {
   createBarberSchedules,
   deleteBarberSchedule,
+  getBarberAvailability,
   getBarbersSchedules,
   updateBarberSchedule,
 } from "../controllers/barber-schedules/controller";
@@ -27,5 +28,7 @@ barberSchedulesRouter.delete(
   "/:id/schedules/:scheduleId",
   deleteBarberSchedule,
 );
+
+barberSchedulesRouter.get("/:id/availability", getBarberAvailability);
 
 export default barberSchedulesRouter;
