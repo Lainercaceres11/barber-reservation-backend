@@ -24,13 +24,13 @@ serviceRouter.post(
 serviceRouter.put(
   "/:id",
   authenticateToken,
-  authorizeRoles("admin"),
+  authorizeRoles("barber"),
   updateService,
 );
 serviceRouter.put(
   "/deleted/:id",
   authenticateToken,
-  authorizeRoles("admin"),
+  authorizeRoles("barber"),
   deleteService,
 );
 

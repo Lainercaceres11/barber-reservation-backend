@@ -25,7 +25,7 @@ barberRouter.post(
 barberRouter.put(
   "/:id",
   authenticateToken,
-  authorizeRoles("admin"),
+  authorizeRoles("barber"),
   updateBarber,
 );
 barberRouter.put(

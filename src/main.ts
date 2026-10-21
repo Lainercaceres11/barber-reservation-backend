@@ -35,7 +35,17 @@ app.use("/barbers", barberRouter);
 app.use("/barbers", barberSchedulesRouter);
 app.use("/appointments", appointmentRouter);
 
-app.listen(PORT, async () => {
-  dbConnection();
-  console.log(`Server runnin on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await dbConnection();
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch {
+    console.error("Server startup failed.");
+    process.exit(1);
+  }
+};
+
+startServer();

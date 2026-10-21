@@ -10,18 +10,30 @@ import {
   getAvailability,
   markNoShow,
 } from "../controllers/appointments/controller";
+import { authorizeRoles } from "../middlewares/role.middleware";
 
 const appointmentRouter = Router();
 
 appointmentRouter.get("/", authenticateToken, getAppointments);
-appointmentRouter.post("/", authenticateToken, createAppointment);
-appointmentRouter.patch("/:id/confirm", authenticateToken, confirmAppointment);
+appointmentRouter.post(
+  "/",
+  authenticateToken,
+  authorizeRoles("customer"),
+  createAppointment,
+);
+appointmentRouter.patch(
+  "/:id/confirm",
+  authenticateToken,
+  authorizeRoles("barber"),
+  confirmAppointment,
+);
 
 appointmentRouter.patch("/:id/cancel", authenticateToken, cancelAppointment);
 
 appointmentRouter.patch(
   "/:id/complete",
   authenticateToken,
+  authorizeRoles("barber"),
   completeAppointment,
 );
 
